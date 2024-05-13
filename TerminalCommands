@@ -1,0 +1,126 @@
+Initial Server Setup for WordPress on Ubuntu 22.04 with LEMP
+
+Updating and Upgrading the System:
+$sudo apt update
+$sudo apt upgrade
+
+Changing Root User Password:
+$sudo passwd root
+
+Creating a New User:
+$sudo adduser NewUserName
+
+Granting Administrative Privileges:
+$sudo usermod -aG sudo NewUserName
+
+Configuring SSH Access, write this code in Windows terminal:
+$ssh-keygen -t rsa -b 4096 
+
+Creating required ssh files in Ubuntu user:
+$su NewUserName
+$mkdir ~/.ssh
+$chmod 700 ~/.ssh
+$touch ~/.ssh/authorized_keys
+$chmod 600 ~/.ssh/authorized_keys
+
+Copy SSH pub file to Ubuntu Server, write this code in Windows terminal:
+$type $env:USERPROFILE\.ssh\id_rsa.pub | ssh NewUserName@xxx.xxx.xxx "cat >> .ssh/authorized_keys"
+
+Block access with password and root login access also block empty password login. Enable key access: 
+$sudo nano /etc/ssh/sshd_config 
+$sudo nano /etc/ssh/sshd_config.d/*.conf
+
+#Do this changes in the config file
+PasswordAuthentication no
+PermitRootLogin no
+PubkeyAuthentication yes
+PermitEmptyPasswords no
+UsePAM no
+#Ctrl + s ve ctrl + w
+
+$sudo systemctl restart sshd
+
+Firewall Configuration:
+$sudo ufw allow OpenSSH
+$sudo ufw enable
+$sudo ufw status
+$sudo ufw allow 80
+
+Enabling Automatic Security Updates:
+$sudo apt install unattended-upgrades
+$sudo dpkg-reconfigure --priority=low unattended-upgrades
+
+Configuring Timezone and NTP:
+$timedatectl show
+$sudo timedatectl set-timezone America/Los_Angeles #or NY
+$sudo apt install ntp
+$sudo systemctl start ntp
+$sudo systemctl enable ntp
+
+Install LEMP and WordPress
+
+Install NGINX:
+$sudo apt-get update
+$sudo apt-get upgrade
+$sudo apt-get install nginx
+$sudo systemctl start nginx
+
+Install MYSQL:
+$sudo apt-get install mysql-server
+$sudo mysql_secure_installation
+
+Set MySQL Password:
+$sudo mysql
+use mysql;
+SELECT user,authentication_string,plugin,host FROM mysql.user;
+ALTER USER 'root'@'localhost' IDENTIFIED WITH caching_sha2_password BY 'Password';
+FLUSH PRIVILEGES;
+exit;
+#Now you can try mysql -u root -p
+sudo systemctl start mysql
+
+Install PHP:
+$sudo add-apt-repository -y ppa:ondrej/php
+$sudo apt-get update
+$sudo apt-get install php-fpm php-mysql php-mbstring unzip php-json php-bcmath php-zip php-gd php-tokenizer php-xml
+$sudo apt-get install php8.3-curl
+
+Configure Nginx:
+sudo nano /etc/nginx/sites-available/default
+#Add index.php, define server name, block htaccess file access
+
+nginx -t
+sudo /etc/init.d/nginx reload
+
+Create the WordPress Database and User:
+$mysql -u root -p
+CREATE DATABASE DatabaseName;
+CREATE USER 'UserName'@'localhost' IDENTIFIED BY 'Password*';
+GRANT ALL PRIVILEGES ON DatabaseName.* TO 'UserName'@'localhost';
+FLUSH PRIVILEGES;
+exit;
+
+Install WordPress:
+$cd /tmp
+$wget https://wordpress.org/latest.tar.gz
+$tar -zxvf latest.tar.gz
+$sudo cp -r /tmp/wordpress/* /var/www/html
+$sudo chown -R www-data:www-data /var/www/html
+
+Configure WordPress:
+#Enter your server external ip address in browser
+Username ......
+Password .......
+
+Setup SSL:
+#Before doing this you need domain, if you have domain you should connect with your domain and server by A name configuration
+$sudo apt install certbot python3-certbot-nginx -y
+$sudo certbot --nginx -d domainname.com
+$sudo nginx -t
+$sudo systemctl reload nginx
+
+			
+
+
+
+
